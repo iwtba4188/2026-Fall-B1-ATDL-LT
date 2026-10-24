@@ -1,0 +1,17 @@
+[project]
+name = "2026-fall-b1-atdl-lt"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "iwtba4188", email = "X69599596@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+2026-fall-b1-atdl-lt = "2026_fall_b1_atdl_lt:main"
+
+[build-system]
+requires = ["uv_build>=0.12.14,<0.13.0"]
+build-backend = "uv_build"
