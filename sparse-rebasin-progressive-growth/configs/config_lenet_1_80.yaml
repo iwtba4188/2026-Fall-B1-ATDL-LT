@@ -1,0 +1,34 @@
+model_type: LeNet
+epochs: 5
+batch_size: 128
+model_b_epochs: 3
+sparse_epochs: 15
+num_workers: 8
+init_weights: true
+project: dummy
+entity: null
+dataset: mnist
+dataset_root:
+  mnist: ./dataset/mnist
+optimizer:
+  type: SGD
+  sparse_lr: 0.02
+  lr: 0.08
+  momentum: 0.9
+  weight_decay: 0.0005
+pruning:
+  sparsity: 0.80
+  prune_perc: 0.2
+  prune_epochs: 10
+  prune_lr: 0.01
+  train_epochs_per_prune: 3
+  tolerance_vgg11: 0.0000005
+  tolerance_resnet20: 0.005
+progressive:
+  target_densities: [0.30, 0.40, 0.50]
+  epochs_per_stage: 5
+  selection: magnitude
+  growth_seed: 0
+device: cuda
+width_multiplier: 1
+save_path: ./res/lenet/

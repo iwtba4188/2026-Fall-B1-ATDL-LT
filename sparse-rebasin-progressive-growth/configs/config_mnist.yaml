@@ -1,0 +1,29 @@
+model_type: ResNet
+epochs: 1
+batch_size: 128
+model_b_epochs: 1
+sparse_epochs: 1
+num_workers: 4
+init_weights: False
+project: nnn
+entity: ucalgary
+dataset: mnist
+dataset_root:
+  mnist: ./dataset/mnist
+optimizer:
+  type: SGD
+  sparse_lr: 0.02
+  lr: 0.08
+  momentum: 0.9
+  weight_decay: 0.0005
+pruning:
+  sparsity: 0.80
+  prune_perc: 0.2
+  prune_epochs: 1
+  prune_lr: 0.01
+  train_epochs_per_prune: 1
+  tolerance_vgg11: 0.0000005
+  tolerance_resnet20: 0.005
+device: cuda
+width_multiplier: 1
+save_path: ./res/mnist/
