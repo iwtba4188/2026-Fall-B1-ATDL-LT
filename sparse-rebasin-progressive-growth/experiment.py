@@ -630,9 +630,8 @@ if __name__ == "__main__":
     elif args.pretrain == "False" and args.method == "progressive":
         with FlopCounterMode(display=False) as mode:
             train_progressive(args.seed, config)
+        print("=" * 50)
+        print(f"Total FLOPs: {mode.get_total_flops()}")
+        print(f"Global FLOPs: {mode.get_flop_counts()['Global']}")
     else:
         raise ValueError("incorrect argument")
-
-    print("=" * 50)
-    print(f"Total FLOPs: {mode.get_total_flops()}")
-    print(f"Global FLOPs: {mode.get_flop_counts()['Global']}")
