@@ -1,11 +1,11 @@
 import torch
 import os
 import torch.nn.utils.prune as prune
-import wandb
 import torch.optim as optim
 from training import train_epoch
 from loaders import cifar_dataloader
 from utils import evaluate, calculate_overall_sparsity_from_pth, check_sparse_gradients, calculate_mask_sparsity, get_model
+from run_logging import log_metrics
 import yaml
 
 def prune_model(
@@ -86,7 +86,7 @@ def prune_model(
                 f"Test accuracy: {test_accu:.2f} - Test loss: {test_loss:.4f} - "
                 f"Train loss est.: {train_loss_est:.4f} - Learning rate: {optimizer.param_groups[0]['lr']:.4f}"
             )
-            wandb.log(
+            log_metrics(
                 {
                     "Model A Sparse Prune Epoch": epoch + 1,
                     "Model A Sparse Train Loss": train_loss_est,

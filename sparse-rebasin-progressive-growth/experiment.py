@@ -9,6 +9,7 @@ from resnet50_src.act_matching_resnet50 import permute_model_resnet50
 import datetime
 from pruning import prune_model
 from progressive import assert_density, grow_mask, mask_statistics, transfer_mask
+from run_logging import finish_run, log_metrics, start_run
 import argparse
 import numpy as np
 import random
@@ -28,14 +29,15 @@ def train_model_a_b(seed, config):
     assert hasattr(torch.backends, config["device"]), f"Device {config['device']} not supported"
     device = torch.device(config['device'] if torch.cuda.is_available() else 'cpu')
 
-    # Initialize wandb with a project name and a unique run name
-    wandb.init(
-        project=config["project"],
-        entity=config["entity"],
-        name=f"{config['model_type']}; seed_{config['seed']}; {current_time}",
-        config={'sparsity':config['pruning']['sparsity'],
-                'width':config['width_multiplier'],
-                }
+    start_run(
+        f"{config['model_type']}_seed_{seed}",
+        {
+            "project": config["project"],
+            "sparsity": config["pruning"]["sparsity"],
+            "width": config["width_multiplier"],
+            "seed": seed,
+        },
+        config["save_path"],
     )
 
 
@@ -224,6 +226,7 @@ def train_model_a_b(seed, config):
             print("\n\n The weights do not match for all layers.")  
     
     torch.save(permuted_model_A_sparse, config['save_path'] + 'permuted_model_a_sparse_sparsity_' + str(config['pruning']['sparsity']) + '_seed_' + str(config['seed']))
+    finish_run()
 
 
 def train_naive_permuted(seed,k, config):
@@ -236,14 +239,16 @@ def train_naive_permuted(seed,k, config):
     assert hasattr(torch.backends, config["device"]), f"Device {config['device']} not supported"
     device = torch.device(config['device'] if torch.cuda.is_available() else 'cpu')
 
-    # Initialize wandb with a project name and a unique run name
-    wandb.init(
-        project=f"{config['project']}_compare",
-        entity=config["entity"],
-        name=f"rewind_{k}_{config['model_type']}; seed_{config['seed']}; {current_time}",
-        config={'sparsity':config['pruning']['sparsity'],
-                'rewind_point':k,
-                'width':config['width_multiplier'],}
+    start_run(
+        f"rewind_{k}_{config['model_type']}_seed_{seed}",
+        {
+            "project": f"{config['project']}_compare",
+            "sparsity": config["pruning"]["sparsity"],
+            "rewind_point": k,
+            "width": config["width_multiplier"],
+            "seed": seed,
+        },
+        config["save_path"],
     )
 
 
@@ -319,6 +324,7 @@ def train_naive_permuted(seed,k, config):
     )
     print(f"B_permuted: {results['B_permuted'][0]:.2f}%, {results['B_permuted'][1]:.4f}")
     ###############################################################################################################################################
+    finish_run()
 
 
 def train_progressive(seed, config):
@@ -343,11 +349,15 @@ def train_progressive(seed, config):
     model_b = get_model(config)
     transfer_mask(source_model, model_b, config["model_type"])
 
-    wandb.init(
-        project=f"{config['project']}_progressive",
-        entity=config["entity"],
-        name=f"progressive_{config['model_type']}; seed_{seed}",
-        config={"method": "progressive", "target_densities": targets},
+    start_run(
+        f"progressive_{config['model_type']}_seed_{seed}",
+        {
+            "project": f"{config['project']}_progressive",
+            "method": "progressive",
+            "target_densities": targets,
+            "seed": seed,
+        },
+        config["save_path"],
     )
     train_dl, test_dl = cifar_dataloader(config["batch_size"], config)
     generator = torch.Generator()
@@ -375,7 +385,7 @@ def train_progressive(seed, config):
             f"{target_density}_seed_{seed}.pth"
         )
         torch.save(model_b.state_dict(), checkpoint)
-        wandb.log(
+        log_metrics(
             {
                 "Progressive Stage": stage,
                 "Progressive Density": target_density,
@@ -424,6 +434,7 @@ def train_progressive(seed, config):
         config["save_path"] + f"model_b_progressive_seed_{seed}.pth",
     )
     print(f"Progressive final accuracy: {result[0]:.2f}%")
+    finish_run()
 
 
 if __name__ == "__main__":

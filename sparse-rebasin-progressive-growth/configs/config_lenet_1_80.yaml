@@ -2,7 +2,7 @@ model_type: LeNet
 epochs: 5
 batch_size: 128
 model_b_epochs: 3
-sparse_epochs: 15
+sparse_epochs: 30
 num_workers: 8
 init_weights: true
 project: dummy
@@ -21,12 +21,12 @@ pruning:
   prune_perc: 0.2
   prune_epochs: 10
   prune_lr: 0.01
-  train_epochs_per_prune: 3
+  train_epochs_per_prune: 1
   tolerance_vgg11: 0.0000005
   tolerance_resnet20: 0.005
 progressive:
-  target_densities: [0.30, 0.40, 0.50]
-  epochs_per_stage: 5
+  target_densities: [0.3]
+  epochs_per_stage: 1
   selection: magnitude
   growth_seed: 0
 device: cuda

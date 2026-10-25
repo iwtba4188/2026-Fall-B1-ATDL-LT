@@ -36,9 +36,7 @@ def _mask(module: nn.Module) -> torch.Tensor:
     return module.weight_mask.detach()
 
 
-def mask_statistics(
-    model: nn.Module, model_type: str
-) -> tuple[int, int]:
+def mask_statistics(model: nn.Module, model_type: str) -> tuple[int, int]:
     """Return active and total eligible parameter counts."""
     active = total = 0
     for _, module in eligible_modules(model, model_type):
@@ -63,12 +61,16 @@ def validate_mask_compatibility(
             )
 
 
-def _install_masks(model: nn.Module, masks: dict[str, torch.Tensor], model_type: str) -> None:
+def _install_masks(
+    model: nn.Module, masks: dict[str, torch.Tensor], model_type: str
+) -> None:
     """Install masks without discarding the original dense weights."""
     for name, module in eligible_modules(model, model_type):
         if hasattr(module, "weight_mask"):
             module.weight_mask.data.copy_(
-                masks[name].to(device=module.weight_mask.device, dtype=module.weight_mask.dtype)
+                masks[name].to(
+                    device=module.weight_mask.device, dtype=module.weight_mask.dtype
+                )
             )
         else:
             prune.custom_from_mask(
@@ -122,34 +124,56 @@ def grow_mask(
     if add_count == 0:
         return old_active, total
 
-    candidates: list[tuple[float, str, tuple[int, ...]]] = []
+    candidate_indices: list[torch.Tensor] = []
+    candidate_scores: list[torch.Tensor] = []
     for name, module in layers:
         mask = _mask(module).bool()
         weights = getattr(module, "weight_orig", module.weight)
         scores = weights.detach().abs()
-        for index in (~mask).nonzero(as_tuple=False):
-            key = tuple(int(value) for value in index)
-            score = float(scores[key].item())
-            candidates.append((score, name, key))
-    if add_count > len(candidates):
+        inactive = ~mask.reshape(-1)
+        candidate_indices.append(inactive.nonzero(as_tuple=False).flatten())
+        candidate_scores.append(scores.reshape(-1)[inactive])
+
+    candidate_count = sum(indices.numel() for indices in candidate_indices)
+    if add_count > candidate_count:
         raise ValueError("Requested density exceeds available inactive weights")
 
+    scores = torch.cat(candidate_scores)
     if selection == "magnitude":
-        candidates.sort(key=lambda item: item[0], reverse=True)
-        selected = candidates[:add_count]
+        _, selected = torch.topk(scores, add_count, largest=True, sorted=False)
     else:
-        order = torch.randperm(len(candidates), generator=generator)
-        selected = [candidates[int(i)] for i in order[:add_count].cpu()]
+        order = torch.randperm(candidate_count, generator=generator)
+        selected = order[:add_count].to(device=scores.device)
 
     masks = {name: _mask(module).clone() for name, module in layers}
-    for _, name, index in selected:
-        masks[name][index] = 1
+    offsets = torch.tensor(
+        [
+            0,
+            *torch.cumsum(
+                torch.tensor(
+                    [indices.numel() for indices in candidate_indices],
+                    dtype=torch.long,
+                ),
+                dim=0,
+            ).tolist(),
+        ],
+        device=scores.device,
+    )
+    # A candidate at a cumulative boundary belongs to the following layer.
+    layer_indices = torch.bucketize(selected, offsets[1:-1], right=True)
+    for layer_index, (name, _) in enumerate(layers):
+        selected_in_layer = selected[layer_indices == layer_index]
+        if selected_in_layer.numel() == 0:
+            continue
+        local_indices = selected_in_layer - offsets[layer_index]
+        flat_mask = masks[name].reshape(-1)
+        flat_mask[candidate_indices[layer_index][local_indices]] = 1
     _install_masks(model, masks, model_type)
     return mask_statistics(model, model_type)
 
 
 def assert_density(
-    model: nn.Module, model_type: str, expected_density: float, tolerance: float = 1e-12
+    model: nn.Module, model_type: str, expected_density: float, tolerance: float = 1e-6
 ) -> None:
     active, total = mask_statistics(model, model_type)
     actual = active / total

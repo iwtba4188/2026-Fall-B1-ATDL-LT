@@ -1,14 +1,15 @@
+import copy
+import math
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.cuda.amp import autocast
-from models import *
-from loaders import cifar_dataloader
-from torch.nn.utils.prune import custom_from_mask
-import math
-import copy
 import yaml
-import os
+from loaders import cifar_dataloader
+from models import *
+from torch.cuda.amp import autocast
+from torch.nn.utils.prune import custom_from_mask
 
 
 def evaluate(model, dataloader, device):
@@ -303,7 +304,7 @@ def check_hooks(model):
 def get_model(config):
     if config["model_type"] == "VGG11":
         num_classes = dataset_num_classes.get(config['dataset'], 10)
-        return VGG11_nofc("VGG11", num_classes, init_weights=config["init_weights"]).to(config["device"])
+        return VGG11_nofc(config, "VGG11", num_classes, init_weights=config["init_weights"]).to(config["device"])
     elif config["model_type"] == "ResNet":
         return ResNet(BasicBlock, [3, 3, 3], config, w=config["width_multiplier"]).to(config["device"])
     elif config["model_type"] == "ResNet50":

@@ -9,6 +9,7 @@ from act_matching_vgg11 import permute_model
 from act_matching_resnet20 import permute_model_resnet
 import datetime
 from pruning import prune_model
+from run_logging import start_run
 import argparse
 import numpy as np
 import os
@@ -28,14 +29,15 @@ def train_model_a_b(seed, config):
     assert hasattr(torch.backends, config["device"]), f"Device {config['device']} not supported"
     device = torch.device(config['device'] if torch.cuda.is_available() else 'cpu')
 
-    # Initialize wandb with a project name and a unique run name
-    wandb.init(
-        project=config["project"],
-        entity=config["entity"],
-        name=f"{config['model_type']}; seed_{config['seed']}; {current_time}",
-        config={'sparsity':config['pruning']['sparsity'],
-                'width':config['width_multiplier'],
-                }
+    start_run(
+        f"{config['model_type']}_scaling_seed_{seed}",
+        {
+            "project": config["project"],
+            "sparsity": config["pruning"]["sparsity"],
+            "width": config["width_multiplier"],
+            "seed": seed,
+        },
+        config["save_path"],
     )
 
 
@@ -179,16 +181,17 @@ def train_naive_permuted(seed,k,neuron_basis, config):
     assert hasattr(torch.backends, config["device"]), f"Device {config['device']} not supported"
     device = torch.device(config['device'] if torch.cuda.is_available() else 'cpu')
 
-    # Initialize wandb with a project name and a unique run name
-    wandb.init(
-        project=f"{config['project']}_compare",
-        entity=config["entity"],
-        name=f"rewind_{k}_{config['model_type']}; seed_{config['seed']}; {current_time}",
-        config={'sparsity':config['pruning']['sparsity'],
-                'rewind_point':k,
-                'width':config['width_multiplier'],
-                'scaling_basis': neuron_basis
-                }
+    start_run(
+        f"rewind_{k}_{config['model_type']}_scaling_seed_{seed}",
+        {
+            "project": f"{config['project']}_compare",
+            "sparsity": config["pruning"]["sparsity"],
+            "rewind_point": k,
+            "width": config["width_multiplier"],
+            "scaling_basis": neuron_basis,
+            "seed": seed,
+        },
+        config["save_path"],
     )
     
     #decrease the sparse epochs based on rewind point

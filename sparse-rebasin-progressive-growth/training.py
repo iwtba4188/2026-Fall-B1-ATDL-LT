@@ -4,7 +4,7 @@ import torch.optim as optim
 import math
 from loaders import cifar_dataloader
 from utils import evaluate, sparse_grad_tolerance
-import wandb
+from run_logging import log_metrics
 import yaml
 
 
@@ -56,7 +56,7 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
         )
         if sparse:
             if training_type == "naive":
-                wandb.log(
+                log_metrics(
                     {
                         f"{model_name} Naive Epoch": epoch + 1,
                         f"{model_name} Naive Train Loss": train_loss_est,
@@ -65,7 +65,7 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
                     }
                 )
             elif training_type == "permuted":
-                wandb.log(
+                log_metrics(
                     {
                         f"{model_name}  Epoch": epoch + 1,
                         f"{model_name}  Train Loss": train_loss_est,
@@ -74,7 +74,7 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
                     }
                 )
             elif training_type == "LTH":
-                wandb.log(
+                log_metrics(
                     {
                         f"{model_name}  Epoch": epoch + 1,
                         f"{model_name}  Train Loss": train_loss_est,
@@ -82,8 +82,17 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
                         f"{model_name}  Test Accuracy": test_accu,
                     }
                 )
+            elif training_type == "progressive":
+                log_metrics(
+                    {
+                        f"{model_name} Progressive Epoch": epoch + 1,
+                        f"{model_name} Progressive Train Loss": train_loss_est,
+                        f"{model_name} Progressive Test Loss": test_loss,
+                        f"{model_name} Progressive Test Accuracy": test_accu,
+                    }
+                )
         else:
-            wandb.log(
+            log_metrics(
                 {
                     f"{model_name}  Epoch": epoch + 1,
                     f"{model_name}  Train Loss": train_loss_est,
