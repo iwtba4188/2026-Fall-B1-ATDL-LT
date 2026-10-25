@@ -120,7 +120,7 @@ Add a `progressive` section to the selected configuration:
 progressive:
   target_densities: [0.20, 0.35, 0.50]
   epochs_per_stage: 5
-  selection: magnitude  # or random
+  selection: magnitude  # magnitude, random, or gradient
   growth_seed: 0
 ```
 
@@ -133,8 +133,9 @@ python experiment.py -config configs/config_1_80.yaml -seed 0 `
 
 `magnitude` activates the currently inactive Model B connections with the
 largest original dense-initialization weights, preserving those weights while
-they are masked. `random` is available as an ablation. Each stage
-writes a `progressive_stage_*` state-dict checkpoint and logs density and
-active-weight counts to W&B. The final pruning target remains
+they are masked. `random` is available as an ablation. `gradient` activates
+connections with the largest absolute weight gradients from one training batch
+before each growth stage. Each stage writes a `progressive_stage_*` state-dict
+checkpoint and logs density and active-weight counts to W&B. The final pruning target remains
 `pruning.sparsity`, so a progressive run can be compared with the existing
 LTH, naive, permuted, and dense Model B controls at matched final sparsity.

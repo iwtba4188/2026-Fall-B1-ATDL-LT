@@ -515,6 +515,8 @@ def train_progressive(seed, config):
                 f"Stage {stage} target density {target_density} is below "
                 f"current density {current_density}"
             )
+        if selection == "gradient":
+            _compute_progressive_gradients(model_b, train_dl)
         grow_mask(
             model_b,
             config["model_type"],
@@ -578,6 +580,18 @@ def train_progressive(seed, config):
     )
     print(f"Progressive final accuracy: {result[0]:.2f}%")
     finish_run()
+
+
+def _compute_progressive_gradients(model, train_dl):
+    """Compute one loss gradient for gradient-based mask growth."""
+    was_training = model.training
+    model.eval()
+    model.zero_grad(set_to_none=True)
+    inputs, targets = next(iter(train_dl))
+    device = next(model.parameters()).device
+    loss = torch.nn.CrossEntropyLoss()(model(inputs.to(device)), targets.to(device))
+    loss.backward()
+    model.train(was_training)
 
 
 if __name__ == "__main__":

@@ -104,13 +104,14 @@ def grow_mask(
     """Grow inactive connections until the requested global density is met.
 
     Growth never removes an active connection. Magnitude selection uses the
-    current effective target weights; random selection is available for
+    current effective target weights, ``gradient`` uses the absolute
+    gradients of the dense weights, and random selection is available for
     controlled ablations.
     """
     if not 0.0 <= target_density <= 1.0:
         raise ValueError("target_density must be between 0 and 1")
-    if selection not in {"magnitude", "random"}:
-        raise ValueError("selection must be 'magnitude' or 'random'")
+    if selection not in {"magnitude", "random", "gradient"}:
+        raise ValueError("selection must be 'magnitude', 'random', or 'gradient'")
 
     layers = eligible_modules(model, model_type)
     old_active, total = mask_statistics(model, model_type)
@@ -129,7 +130,15 @@ def grow_mask(
     for name, module in layers:
         mask = _mask(module).bool()
         weights = getattr(module, "weight_orig", module.weight)
-        scores = weights.detach().abs()
+        if selection == "gradient":
+            gradients = weights.grad
+            if gradients is None:
+                raise ValueError(
+                    "gradient selection requires gradients on all progressive layers"
+                )
+            scores = gradients.detach().abs()
+        else:
+            scores = weights.detach().abs()
         inactive = ~mask.reshape(-1)
         candidate_indices.append(inactive.nonzero(as_tuple=False).flatten())
         candidate_scores.append(scores.reshape(-1)[inactive])
@@ -141,9 +150,11 @@ def grow_mask(
     scores = torch.cat(candidate_scores)
     if selection == "magnitude":
         _, selected = torch.topk(scores, add_count, largest=True, sorted=False)
-    else:
+    elif selection == "random":
         order = torch.randperm(candidate_count, generator=generator)
         selected = order[:add_count].to(device=scores.device)
+    else:
+        _, selected = torch.topk(scores, add_count, largest=True, sorted=False)
 
     masks = {name: _mask(module).clone() for name, module in layers}
     offsets = torch.tensor(

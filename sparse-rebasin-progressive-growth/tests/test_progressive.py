@@ -64,3 +64,34 @@ def test_magnitude_growth_uses_original_dense_weights():
 
     assert model[0].weight_mask[0, 0].item() == 1
     assert model[0].weight_orig[0, 0].item() == 10.0
+
+
+def test_gradient_growth_uses_dense_weight_gradients():
+    model = _masked_model()
+    model[0].weight_mask.data.zero_()
+    model[1].weight_mask.data.zero_()
+    model[0].weight_orig.grad = torch.tensor(
+        [
+            [10.0, 0.0, 0.0, 0.0],
+            [0.0, 9.0, 0.0, 0.0],
+            [0.0, 0.0, 8.0, 0.0],
+            [0.0, 0.0, 0.0, 7.0],
+        ]
+    )
+    model[1].weight_orig.grad = torch.zeros_like(model[1].weight_orig)
+    _, total = mask_statistics(model, "LeNet")
+
+    grow_mask(model, "LeNet", 1 / total, selection="by_gradient")
+
+    assert model[0].weight_mask[0, 0].item() == 1
+
+
+def test_gradient_growth_requires_gradients():
+    model = _masked_model()
+
+    try:
+        grow_mask(model, "LeNet", 0.5, selection="by_gradient")
+    except ValueError as error:
+        assert "requires gradients" in str(error)
+    else:
+        raise AssertionError("gradient growth should require parameter gradients")
