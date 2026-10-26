@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.utils.prune as prune
-
 from progressive import (
     assert_density,
     grow_mask,
@@ -27,7 +26,9 @@ def test_transfer_and_growth_are_monotonic():
 
     transfer_mask(source, target, "LeNet")
     active, total = mask_statistics(target, "LeNet")
-    assert active == int(source[0].weight_mask.count_nonzero() + source[1].weight_mask.count_nonzero())
+    assert active == int(
+        source[0].weight_mask.count_nonzero() + source[1].weight_mask.count_nonzero()
+    )
     assert total == source[0].weight_mask.numel() + source[1].weight_mask.numel()
 
     initial_density = active / total
@@ -83,7 +84,7 @@ def test_gradient_growth_uses_dense_weight_gradients():
     model[1].weight_orig.grad = torch.zeros_like(model[1].weight_orig)
     _, total = mask_statistics(model, "LeNet")
 
-    grow_mask(model, "LeNet", 1 / total, selection="by_gradient")
+    grow_mask(model, "LeNet", 1 / total, selection="gradient")
 
     assert model[0].weight_mask[0, 0].item() == 1
 
@@ -92,7 +93,7 @@ def test_gradient_growth_requires_gradients():
     model = _masked_model()
 
     try:
-        grow_mask(model, "LeNet", 0.5, selection="by_gradient")
+        grow_mask(model, "LeNet", 0.5, selection="gradient")
     except ValueError as error:
         assert "requires gradients" in str(error)
     else:
@@ -118,9 +119,7 @@ def test_mask_retention_statistics_tracks_initial_and_added_nodes():
             layer.weight_mask.data.reshape(-1)[index] = 1
             break
 
-    stats = mask_retention_statistics(
-        model, "LeNet", initial_masks, grown_masks
-    )
+    stats = mask_retention_statistics(model, "LeNet", initial_masks, grown_masks)
 
     assert stats["initial_retained"] == 1
     assert stats["added_retained"] == 1
