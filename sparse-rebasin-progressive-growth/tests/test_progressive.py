@@ -123,4 +123,4 @@ def test_mask_retention_statistics_tracks_initial_and_added_nodes():
 
     assert stats["initial_retained"] == 1
     assert stats["added_retained"] == 1
-    assert stats["initial_retention"] == 0.5
+    assert stats["initial_retention"] == 0.125

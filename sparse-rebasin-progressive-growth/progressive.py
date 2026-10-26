@@ -166,6 +166,14 @@ def grow_mask(
         raise ValueError("selection must be 'magnitude', 'random', or 'gradient'")
 
     layers = eligible_modules(model, model_type)
+    if selection == "gradient":
+        for _, module in layers:
+            weights = getattr(module, "weight_orig", module.weight)
+            if weights.grad is None:
+                raise ValueError(
+                    "gradient selection requires gradients on all progressive layers"
+                )
+
     old_active, total = mask_statistics(model, model_type)
     target_active = int(round(target_density * total))
     if target_active < old_active:
@@ -183,12 +191,7 @@ def grow_mask(
         mask = _mask(module).bool()
         weights = getattr(module, "weight_orig", module.weight)
         if selection == "gradient":
-            gradients = weights.grad
-            if gradients is None:
-                raise ValueError(
-                    "gradient selection requires gradients on all progressive layers"
-                )
-            scores = gradients.detach().abs()
+            scores = weights.grad.detach().abs()
         else:
             scores = weights.detach().abs()
         inactive = ~mask.reshape(-1)
