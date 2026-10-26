@@ -13,6 +13,22 @@ _logger = logging.getLogger("sparse_rebasin")
 _metrics_file: Path | None = None
 
 
+def _json_safe(value: Any) -> Any:
+    """Convert nested metrics to JSON-safe values, including dictionary keys."""
+    if isinstance(value, dict):
+        return {str(key): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    if hasattr(value, "item"):
+        try:
+            return _json_safe(value.item())
+        except (TypeError, ValueError):
+            pass
+    return str(value)
+
+
 def start_run(name: str, config: dict[str, Any], run_dir: str | Path) -> None:
     """Start a local run and write its metadata to disk."""
     global _metrics_file
@@ -41,7 +57,7 @@ def log_metrics(metrics: dict[str, Any]) -> None:
         **metrics,
     }
     with _metrics_file.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(record, default=str) + "\n")
+        stream.write(json.dumps(_json_safe(record)) + "\n")
 
 
 def finish_run() -> None:

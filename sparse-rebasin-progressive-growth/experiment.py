@@ -9,7 +9,14 @@ import yaml
 from act_matching_resnet20 import permute_model_resnet
 from act_matching_vgg11 import permute_model
 from models import *
-from progressive import assert_density, grow_mask, mask_statistics, transfer_mask
+from progressive import (
+    assert_density,
+    grow_mask,
+    mask_retention_statistics,
+    mask_statistics,
+    snapshot_masks,
+    transfer_mask,
+)
 from pruning import prune_model
 from resnet50_src.act_matching_resnet50 import permute_model_resnet50
 from run_logging import finish_run, log_metrics, start_run
@@ -491,6 +498,7 @@ def train_progressive(seed, config):
     source_model = torch.load(source_path, map_location=config["device"])
     model_b = get_model(config)
     transfer_mask(source_model, model_b, config["model_type"])
+    initial_masks = snapshot_masks(model_b, config["model_type"])
 
     start_run(
         f"progressive_{config['model_type']}_seed_{seed}",
@@ -554,6 +562,7 @@ def train_progressive(seed, config):
             f"accuracy={evaluate_result[0]:.2f}%"
         )
 
+    grown_masks = snapshot_masks(model_b, config["model_type"])
     final_target = config["pruning"]["sparsity"]
     prune_model(
         config,
@@ -572,6 +581,32 @@ def train_progressive(seed, config):
             else "tolerance_vgg11",
             0.005,
         ),
+    )
+    retention = mask_retention_statistics(
+        model_b,
+        config["model_type"],
+        initial_masks,
+        grown_masks,
+    )
+    log_metrics(
+        {
+            "Progressive Initial Active": retention["initial_active"],
+            "Progressive Added Active": retention["added_active"],
+            "Progressive Final Active": retention["final_active"],
+            "Progressive Initial Retained": retention["initial_retained"],
+            "Progressive Added Retained": retention["added_retained"],
+            "Progressive Initial Retention": retention["initial_retention"],
+            "Progressive Added Retention": retention["added_retention"],
+            "Progressive Initial Retention Percent": (
+                retention["initial_retention"] * 100
+            ),
+            "Progressive Added Retention Percent": retention["added_retention"] * 100,
+        }
+    )
+    print(
+        "Progressive mask retention: "
+        f"initial={retention['initial_retention']:.2%}, "
+        f"added={retention['added_retention']:.2%}"
     )
     result = evaluate(model_b, test_dl, config["device"])
     torch.save(
@@ -633,5 +668,12 @@ if __name__ == "__main__":
         print("=" * 50)
         print(f"Total FLOPs: {mode.get_total_flops()}")
         print(f"Global FLOPs: {mode.get_flop_counts()['Global']}")
+
+        log_metrics(
+            {
+                "Total FLOPs": mode.get_total_flops(),
+                "Global FLOPs": mode.get_flop_counts()["Global"],
+            }
+        )
     else:
         raise ValueError("incorrect argument")

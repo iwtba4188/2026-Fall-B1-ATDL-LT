@@ -5,7 +5,9 @@ import torch.nn.utils.prune as prune
 from progressive import (
     assert_density,
     grow_mask,
+    mask_retention_statistics,
     mask_statistics,
+    snapshot_masks,
     transfer_mask,
 )
 
@@ -95,3 +97,31 @@ def test_gradient_growth_requires_gradients():
         assert "requires gradients" in str(error)
     else:
         raise AssertionError("gradient growth should require parameter gradients")
+
+
+def test_mask_retention_statistics_tracks_initial_and_added_nodes():
+    model = _masked_model()
+    for layer in model:
+        layer.weight_mask.data.zero_()
+    model[0].weight_mask.data.reshape(-1)[:8] = 1
+    initial_masks = snapshot_masks(model, "LeNet")
+    grow_mask(model, "LeNet", 0.75)
+    grown_masks = snapshot_masks(model, "LeNet")
+
+    for layer in model:
+        layer.weight_mask.data.zero_()
+    model[0].weight_mask.data.reshape(-1)[0] = 1
+    for name, layer in zip(("0", "1"), model):
+        added = grown_masks[name] & ~initial_masks[name]
+        if added.any():
+            index = added.reshape(-1).nonzero(as_tuple=False)[0].item()
+            layer.weight_mask.data.reshape(-1)[index] = 1
+            break
+
+    stats = mask_retention_statistics(
+        model, "LeNet", initial_masks, grown_masks
+    )
+
+    assert stats["initial_retained"] == 1
+    assert stats["added_retained"] == 1
+    assert stats["initial_retention"] == 0.5

@@ -46,6 +46,58 @@ def mask_statistics(model: nn.Module, model_type: str) -> tuple[int, int]:
     return active, total
 
 
+def snapshot_masks(model: nn.Module, model_type: str) -> dict[str, torch.Tensor]:
+    """Return a detached copy of the current eligible-layer masks."""
+    return {
+        name: _mask(module).bool().clone()
+        for name, module in eligible_modules(model, model_type)
+    }
+
+
+def mask_retention_statistics(
+    model: nn.Module,
+    model_type: str,
+    initial_masks: dict[str, torch.Tensor],
+    grown_masks: dict[str, torch.Tensor],
+) -> dict[str, int | float]:
+    """Measure which original and progressively added connections survive.
+
+    ``initial_masks`` is the mask transferred from Model A and ``grown_masks``
+    is the mask immediately before the final pruning phase.
+
+    The retention ratios are set intersections:
+    ``initial_retention = |initial ∩ final| / |initial|`` and
+    ``added_retention = |(grown - initial) ∩ final| / |grown - initial|``.
+    """
+    final_masks = snapshot_masks(model, model_type)
+    names = {name for name, _ in eligible_modules(model, model_type)}
+    if set(initial_masks) != names or set(grown_masks) != names:
+        raise ValueError("Mask snapshots do not match the model's eligible layers")
+
+    initial = torch.cat([initial_masks[name].reshape(-1) for name in sorted(names)])
+    grown = torch.cat([grown_masks[name].reshape(-1) for name in sorted(names)])
+    final = torch.cat([final_masks[name].reshape(-1) for name in sorted(names)])
+    added = grown & ~initial
+
+    initial_count = int(initial.sum().item())
+    added_count = int(added.sum().item())
+    return {
+        "initial_active": initial_count,
+        "added_active": added_count,
+        "final_active": int(final.sum().item()),
+        "initial_retained": int((initial & final).sum().item()),
+        "added_retained": int((added & final).sum().item()),
+        "initial_retention": (
+            float((initial & final).sum().item() / initial_count)
+            if initial_count
+            else 1.0
+        ),
+        "added_retention": (
+            float((added & final).sum().item() / added_count) if added_count else 1.0
+        ),
+    }
+
+
 def validate_mask_compatibility(
     source_model: nn.Module, target_model: nn.Module, model_type: str
 ) -> None:
