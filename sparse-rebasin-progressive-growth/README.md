@@ -20,21 +20,14 @@ The BibTex citation of the original work:
 
 ## Quickstart
 
-1. Install the uv package manager following [uv Installation](https://docs.astral.sh/uv/getting-started/installation/).
-2. Install packages and a virtual environment
-
-    ```powershell
-    uv sync
-    ```
-
-3. Write a config file; see examples in `sparse-rebasin-progressive-growth/configs`
-4. Under the `sparse-rebasin-progressive-growth` folder, run
+1. Write a config file; see examples in `sparse-rebasin-progressive-growth/configs`
+2. Under the `sparse-rebasin-progressive-growth` folder, run
 
     ```powershell
     uv run experiment.py -config <path-to-config> -seed 0 -pretrain True
     ```
 
-5. After running 4. once, run for the progressive version (our method)
+3. After running 2. once, run for the progressive version (our method)
 
     ```powershell
     uv run experiment.py -config <path-to-config> -seed 0 -pretrain False --rewind 0 --method progressive
@@ -46,8 +39,8 @@ The BibTex citation of the original work:
     uv run experiment.py -config <path-to-config> -seed 0 -pretrain False --rewind 0 --method baselines
     ```
 
-6. If you didn't modify the network architecture and dataset, you may run 4. just once and run 5. directly using a new config.
-7. The result is in the `res` folder.
+4. If you didn't modify the network architecture and dataset, you may run 2. just once and run 3. directly using a new config.
+5. The result is in the `res` folder.
 
 ## Usage
 
