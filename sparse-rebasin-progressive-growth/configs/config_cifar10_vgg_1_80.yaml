@@ -5,7 +5,7 @@ model_b_epochs: 1
 sparse_epochs: 15
 num_workers: 8
 init_weights: true
-project: cifar10_vgg11
+project: cifar10_vgg11_by_gradient
 entity: null
 dataset: cifar10
 dataset_root: 
@@ -28,7 +28,7 @@ pruning:
 progressive:
   target_densities: [0.3, 0.4]
   epochs_per_stage: 5
-  selection: magnitude
+  selection: gradient
   growth_seed: 0
 device: cuda
 width_multiplier: 1

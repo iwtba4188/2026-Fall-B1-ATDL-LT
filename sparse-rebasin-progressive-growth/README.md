@@ -1,10 +1,8 @@
 # Sparse Training from Random Initialization: Aligning Lottery Ticket Masks using Weight Symmetry
 
-This is the code repository for the paper "Sparse Training from Random Initialization: Aligning Lottery Ticket Masks using Weight Symmetry", [accepted at ICML 2025](https://openreview.net/forum?id=BnfJSwtHLu), and available on arXiv at http://arxiv.org/abs/2505.05143.
+This is the code repository is based on the code repository of paper "Sparse Training from Random Initialization: Aligning Lottery Ticket Masks using Weight Symmetry", [accepted at ICML 2025](https://openreview.net/forum?id=BnfJSwtHLu), and available on arXiv at http://arxiv.org/abs/2505.05143.
 
-## Citing our work
-
-If you find this code useful, please cite our work with the following BibTex citation:
+The BibTex citation of the original work:
 
 ```bibtex
 @inproceedings{mohammed2025sparsetraining,
@@ -20,51 +18,36 @@ If you find this code useful, please cite our work with the following BibTex cit
 }
 ```
 
-Setup
------
+## Quickstart
 
-### Prerequisites
+1. Install the uv package manager following [uv Installation](https://docs.astral.sh/uv/getting-started/installation/).
+2. Install packages and a virtual environment
 
--   Python 3.x
--   PyTorch
--   Rest mentioned in `requirements.txt`
-  
-### Virtual Environment
-
-We recommend running experiments/installing requirements in a python virtual environment:
-
-1. Install venv module (if not already installed) as a user:
-
-    ```
-    python3 -m pip install --user virtualenv
+    ```powershell
+    uv sync
     ```
 
-2. Create a virtual environment named "env":
+3. Write a config file; see examples in `sparse-rebasin-progressive-growth/configs`
+4. Under the `sparse-rebasin-progressive-growth` folder, run
 
-    ```
-    python3 -m virtualenv env
-    ```
-
-3. Activate the virtual environment:
-
-    ```
-    source env/bin/activate
+    ```powershell
+    uv run experiment.py -config <path-to-config> -seed 0 -pretrain True
     ```
 
-### Installation
+5. After running 4. once, run for the progressive version (our method)
 
-1.  Clone the repository:
-
-    ```
-    git clone https://github.com/calgaryml/sparse-rebasin.git
+    ```powershell
+    uv run experiment.py -config <path-to-config> -seed 0 -pretrain False --rewind 0 --method progressive
     ```
 
-3.  Install the required dependencies:
+    Or for baselines
 
-   
+    ```powershell
+    uv run experiment.py -config <path-to-config> -seed 0 -pretrain False --rewind 0 --method baselines
     ```
-     pip install -r requirements.txt
-    ```
+
+6. If you didn't modify the network architecture and dataset, you may run 4. just once and run 5. directly using a new config.
+7. The result is in the `res` folder.
 
 ## Usage
 
@@ -74,17 +57,17 @@ To run the experiment after setup:
 
 Part 1: Dense training, Pruning, and Permutation Matching.
 ```
-python experiment.py -config <FILE_NAME> -seed <INT> -pretrain True
+uv run experiment.py -config <FILE_NAME> -seed <INT> -pretrain True
 ```
 Part 2: Sparse training LTH, Naive, and the Permuted solutions.
 ```
-python experiment.py -config <FILE_NAME> -seed <INT> -pretrain False --rewind <INT>
+uv run experiment.py -config <FILE_NAME> -seed <INT> -pretrain False --rewind <INT>
 ```
 
 For example, to pretrain the MNIST ResNet20:
 
 ```
-python experiment.py -config configs/config_mnist.yaml -seed 0 -pretrain True
+uv run experiment.py -config configs/config_mnist.yaml -seed 0 -pretrain True
 ```
 
 On Windows, the data loaders automatically use `num_workers=0`. This avoids
@@ -99,8 +82,8 @@ LeNet is supported for CIFAR-10, CIFAR-100, and MNIST. Set
 `configs/config_lenet_1_80.yaml`:
 
 ```powershell
-python experiment.py -config configs/config_lenet_1_80.yaml -seed 0 -pretrain True
-python experiment.py -config configs/config_lenet_1_80.yaml -seed 0 -pretrain False --rewind 0
+uv run experiment.py -config configs/config_lenet_1_80.yaml -seed 0 -pretrain True
+uv run experiment.py -config configs/config_lenet_1_80.yaml -seed 0 -pretrain False --rewind 0
 ```
 
 The LeNet configuration uses the same dense-training, iterative-pruning,
@@ -127,8 +110,7 @@ progressive:
 After the dense/pruning phase has produced Model A's mask, run:
 
 ```powershell
-python experiment.py -config configs/config_1_80.yaml -seed 0 `
-  -pretrain False --method progressive
+uv run experiment.py -config configs/config_1_80.yaml -seed 0 -pretrain False --method progressive
 ```
 
 `magnitude` activates the currently inactive Model B connections with the
