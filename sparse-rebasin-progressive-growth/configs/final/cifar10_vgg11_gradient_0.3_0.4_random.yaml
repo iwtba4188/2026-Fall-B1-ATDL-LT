@@ -1,8 +1,8 @@
 model_type: VGG11
-epochs: 20
+epochs: 40
 batch_size: 128
-model_b_epochs: 20
-sparse_epochs: 20
+model_b_epochs: 1
+sparse_epochs: 40
 num_workers: 8
 init_weights: true
 project: cifar10_vgg11_gradient
