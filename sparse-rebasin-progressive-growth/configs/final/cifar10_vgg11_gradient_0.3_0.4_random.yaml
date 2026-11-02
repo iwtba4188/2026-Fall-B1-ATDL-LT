@@ -5,7 +5,7 @@ model_b_epochs: 1
 sparse_epochs: 40
 num_workers: 8
 init_weights: true
-project: cifar10_vgg11_gradient
+project: cifar10_vgg11_gradient_0.3_0.4_random
 entity: null
 dataset: cifar10
 dataset_root: 
