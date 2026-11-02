@@ -347,7 +347,7 @@ def train_naive_permuted(seed, k, config):
     model_A_dense_init_for_LTH = get_model(config)
     load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
     model_A_dense_init_for_LTH.load_state_dict(
-        torch.load(load_path_rewound_point_A_for_LTH), weights_only=False
+        torch.load(load_path_rewound_point_A_for_LTH, weights_only=False)
     )
     results["model_A_LTH_rewound_point_eval"] = evaluate(
         model_A_dense_init_for_LTH, test_dl, config["device"]
@@ -391,7 +391,7 @@ def train_naive_permuted(seed, k, config):
     model_B_dense_init_naive = get_model(config)
     path_rewound_point_B_for_naive_and_permuted = f"{config['save_path']}Model_B_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
     model_B_dense_init_naive.load_state_dict(
-        torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
+        torch.load(path_rewound_point_B_for_naive_and_permuted, weights_only=False)
     )
 
     results["model_B_naive_rewound_point_eval"] = evaluate(
@@ -427,7 +427,7 @@ def train_naive_permuted(seed, k, config):
     ################################################## Sparse training: Random solution = W_B^{t=k} ⊙ M_random ###############################
     model_B_dense_init_random = get_model(config)
     model_B_dense_init_random.load_state_dict(
-        torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
+        torch.load(path_rewound_point_B_for_naive_and_permuted, weights_only=False)
     )
     source_active, _ = mask_statistics(original_model_A_sparse, config["model_type"])
     random_mask_generator = torch.Generator()
@@ -471,7 +471,7 @@ def train_naive_permuted(seed, k, config):
     with FlopCounterMode(display=False) as mode:
         model_B_dense_init_perm = get_model(config)
         model_B_dense_init_perm.load_state_dict(
-            torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
+            torch.load(path_rewound_point_B_for_naive_and_permuted, weights_only=False)
         )
         ## Ensure this gives the same evaluation as the rewound point from above. ###
         results["model_B_perm_rewound_point_eval"] = evaluate(
