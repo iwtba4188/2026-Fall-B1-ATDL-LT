@@ -330,6 +330,7 @@ def train_naive_permuted(seed, k, config):
             "project": f"{config['project']}_compare",
             "sparsity": config["pruning"]["sparsity"],
             "rewind_point": k,
+            "random_mask_seed": initial_mask_seed,
             "width": config["width_multiplier"],
             "seed": seed,
         },
@@ -338,6 +339,8 @@ def train_naive_permuted(seed, k, config):
 
     # decrease the sparse epochs based on rewind point
     adjusted_sparse_epochs = config["sparse_epochs"] - k
+    baseline_config = config.get("baseline", {})
+    initial_mask_seed = int(baseline_config.get("initial_mask_seed", seed))
     train_dl, test_dl = cifar_dataloader(config["batch_size"], config)
 
     ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
@@ -418,6 +421,53 @@ def train_naive_permuted(seed, k, config):
 
     results["B_naive"] = evaluate(model_B_dense_init_naive, test_dl, config["device"])
     print(f"B_naive: {results['B_naive'][0]:.2f}%, {results['B_naive'][1]:.4f}")
+    ###############################################################################################################################################
+
+    ################################################## Sparse training: Random solution = W_B^{t=k} ⊙ M_random ###############################
+    model_B_dense_init_random = get_model(config)
+    model_B_dense_init_random.load_state_dict(
+        torch.load(path_rewound_point_B_for_naive_and_permuted)
+    )
+    source_active, _ = mask_statistics(original_model_A_sparse, config["model_type"])
+    random_mask_generator = torch.Generator()
+    random_mask_generator.manual_seed(initial_mask_seed)
+    initialize_random_mask(
+        model_B_dense_init_random,
+        config["model_type"],
+        source_active,
+        generator=random_mask_generator,
+    )
+    check_hooks(model_B_dense_init_random)
+    print(
+        "Sparsity of the random-mask init: ",
+        calculate_overall_sparsity_from_pth(model_B_dense_init_random),
+    )
+
+    trainer(
+        model_B_dense_init_random,
+        config["optimizer"],
+        adjusted_sparse_epochs,
+        config["batch_size"],
+        config["device"],
+        "Model_B_Random",
+        config,
+        sparse=True,
+        training_type="random",
+    )
+
+    results["B_random"] = evaluate(
+        model_B_dense_init_random, test_dl, config["device"]
+    )
+    print(
+        f"B_random: {results['B_random'][0]:.2f}%, "
+        f"{results['B_random'][1]:.4f}"
+    )
+    torch.save(
+        model_B_dense_init_random,
+        config["save_path"]
+        + f"model_b_random_sparsity_{config['pruning']['sparsity']}"
+        + f"_seed_{seed}_rewind_{k}.pth",
+    )
     ###############################################################################################################################################
 
     ################################################# Sparse training: Permuted solution = W_B^{t=k} ⊙ π(M_A) ####################################

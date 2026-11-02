@@ -57,6 +57,18 @@ Part 2: Sparse training LTH, Naive, and the Permuted solutions.
 uv run experiment.py -config <FILE_NAME> -seed <INT> -pretrain False --rewind <INT>
 ```
 
+The non-progressive baseline also trains `B_random`: Model B at the selected
+rewind point with a random mask. Its mask has exactly the same number of active
+weights as Model A's mask, while the training epochs and optimizer remain the
+same as the Naive baseline. To control its mask seed, optionally add:
+
+```yaml
+baseline:
+  initial_mask_seed: 0
+```
+
+The trained model is saved as `model_b_random_sparsity_*_rewind_*.pth`.
+
 For example, to pretrain the MNIST ResNet20:
 
 ```

@@ -82,6 +82,15 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
                         f"{model_name}  Test Accuracy": test_accu,
                     }
                 )
+            elif training_type == "random":
+                log_metrics(
+                    {
+                        f"{model_name} Random Epoch": epoch + 1,
+                        f"{model_name} Random Train Loss": train_loss_est,
+                        f"{model_name} Random Test Loss": test_loss,
+                        f"{model_name} Random Test Accuracy": test_accu,
+                    }
+                )
             elif training_type == "progressive":
                 log_metrics(
                     {
