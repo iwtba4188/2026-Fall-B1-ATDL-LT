@@ -29,6 +29,8 @@ progressive:
   epochs_per_stage: 2
   selection: magnitude
   growth_seed: 0
+  initial_mask: model_a
+  initial_mask_seed: 0
 device: cuda
 width_multiplier: 1
 save_path: ./res/vgg11/

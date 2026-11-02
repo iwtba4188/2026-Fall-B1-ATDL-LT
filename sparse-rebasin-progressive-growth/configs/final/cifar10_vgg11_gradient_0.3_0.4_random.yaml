@@ -1,0 +1,37 @@
+model_type: VGG11
+epochs: 20
+batch_size: 128
+model_b_epochs: 20
+sparse_epochs: 20
+num_workers: 8
+init_weights: true
+project: cifar10_vgg11_gradient
+entity: null
+dataset: cifar10
+dataset_root: 
+  cifar10: ./dataset/cifar10
+  cifar100: ./dataset/cifar100
+optimizer:
+  type: SGD
+  sparse_lr: 0.02
+  lr: 0.08
+  momentum: 0.9
+  weight_decay: 0.0005
+pruning:
+  sparsity: 0.80
+  prune_perc: 0.2
+  prune_epochs: 10
+  prune_lr: 0.01
+  train_epochs_per_prune: 1
+  tolerance_vgg11: 0.0000005
+  tolerance_resnet20: 0.005
+progressive:
+  target_densities: [0.3, 0.4]
+  epochs_per_stage: 7
+  selection: gradient
+  growth_seed: 0
+  initial_mask: random
+  initial_mask_seed: 0
+device: cuda
+width_multiplier: 1
+save_path: ./res/vgg11/
