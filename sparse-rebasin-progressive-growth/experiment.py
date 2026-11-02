@@ -12,10 +12,12 @@ from models import *
 from progressive import (
     assert_density,
     grow_mask,
+    initialize_random_mask,
     mask_retention_statistics,
     mask_statistics,
     snapshot_masks,
     transfer_mask,
+    validate_mask_compatibility,
 )
 from pruning import prune_model
 from resnet50_src.act_matching_resnet50 import permute_model_resnet50
@@ -338,85 +340,85 @@ def train_naive_permuted(seed, k, config):
     adjusted_sparse_epochs = config["sparse_epochs"] - k
     train_dl, test_dl = cifar_dataloader(config["batch_size"], config)
 
-    # ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
-    # model_A_dense_init_for_LTH = get_model(config)
-    # load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
-    # model_A_dense_init_for_LTH.load_state_dict(
-    #     torch.load(load_path_rewound_point_A_for_LTH)
-    # )
-    # results["model_A_LTH_rewound_point_eval"] = evaluate(
-    #     model_A_dense_init_for_LTH, test_dl, config["device"]
-    # )
-    # print(
-    #     f"model_A_LTH_rewound_point_eval: {results['model_A_LTH_rewound_point_eval'][0]:.2f}%, {results['model_A_LTH_rewound_point_eval'][1]:.4f}"
-    # )
+    ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
+    model_A_dense_init_for_LTH = get_model(config)
+    load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
+    model_A_dense_init_for_LTH.load_state_dict(
+        torch.load(load_path_rewound_point_A_for_LTH)
+    )
+    results["model_A_LTH_rewound_point_eval"] = evaluate(
+        model_A_dense_init_for_LTH, test_dl, config["device"]
+    )
+    print(
+        f"model_A_LTH_rewound_point_eval: {results['model_A_LTH_rewound_point_eval'][0]:.2f}%, {results['model_A_LTH_rewound_point_eval'][1]:.4f}"
+    )
 
-    # original_model_A_sparse = torch.load(
-    #     config["save_path"]
-    #     + "model_a_sparse_sparsity_"
-    #     + str(config["pruning"]["sparsity"])
-    #     + "_seed_"
-    #     + str(config["seed"])
-    # )
+    original_model_A_sparse = torch.load(
+        config["save_path"]
+        + "model_a_sparse_sparsity_"
+        + str(config["pruning"]["sparsity"])
+        + "_seed_"
+        + str(config["seed"])
+    )
 
-    # transfer_sparsity_resnet(original_model_A_sparse, model_A_dense_init_for_LTH)
-    # check_hooks(model_A_dense_init_for_LTH)
-    # print(
-    #     "Sparsity of the init after transfer sparsity: ",
-    #     calculate_overall_sparsity_from_pth(model_A_dense_init_for_LTH),
-    # )
+    transfer_sparsity_resnet(original_model_A_sparse, model_A_dense_init_for_LTH)
+    check_hooks(model_A_dense_init_for_LTH)
+    print(
+        "Sparsity of the init after transfer sparsity: ",
+        calculate_overall_sparsity_from_pth(model_A_dense_init_for_LTH),
+    )
 
-    # trainer(
-    #     model_A_dense_init_for_LTH,
-    #     config["optimizer"],
-    #     adjusted_sparse_epochs,
-    #     config["batch_size"],
-    #     config["device"],
-    #     "LTH",
-    #     config,
-    #     sparse=True,
-    #     training_type="LTH",
-    # )
-    # results["LTH"] = evaluate(model_A_dense_init_for_LTH, test_dl, config["device"])
-    # print(f"LTH: {results['LTH'][0]:.2f}%, {results['LTH'][1]:.4f}")
-    # #################################################################################################################################################
+    trainer(
+        model_A_dense_init_for_LTH,
+        config["optimizer"],
+        adjusted_sparse_epochs,
+        config["batch_size"],
+        config["device"],
+        "LTH",
+        config,
+        sparse=True,
+        training_type="LTH",
+    )
+    results["LTH"] = evaluate(model_A_dense_init_for_LTH, test_dl, config["device"])
+    print(f"LTH: {results['LTH'][0]:.2f}%, {results['LTH'][1]:.4f}")
+    #################################################################################################################################################
 
-    # ################################################## Sparse training: Naive solution = W_B^{t=k} ⊙ M_A ############################################
-    # model_B_dense_init_naive = get_model(config)
-    # path_rewound_point_B_for_naive_and_permuted = f"{config['save_path']}Model_B_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
-    # model_B_dense_init_naive.load_state_dict(
-    #     torch.load(path_rewound_point_B_for_naive_and_permuted)
-    # )
+    ################################################## Sparse training: Naive solution = W_B^{t=k} ⊙ M_A ############################################
+    model_B_dense_init_naive = get_model(config)
+    path_rewound_point_B_for_naive_and_permuted = f"{config['save_path']}Model_B_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
+    model_B_dense_init_naive.load_state_dict(
+        torch.load(path_rewound_point_B_for_naive_and_permuted)
+    )
 
-    # results["model_B_naive_rewound_point_eval"] = evaluate(
-    #     model_B_dense_init_naive, test_dl, config["device"]
-    # )
-    # print(
-    #     f"model_B_naive_rewound_point_eval: {results['model_B_naive_rewound_point_eval'][0]:.2f}%, {results['model_B_naive_rewound_point_eval'][1]:.4f}"
-    # )
+    results["model_B_naive_rewound_point_eval"] = evaluate(
+        model_B_dense_init_naive, test_dl, config["device"]
+    )
+    print(
+        f"model_B_naive_rewound_point_eval: {results['model_B_naive_rewound_point_eval'][0]:.2f}%, {results['model_B_naive_rewound_point_eval'][1]:.4f}"
+    )
 
-    # transfer_sparsity_resnet(original_model_A_sparse, model_B_dense_init_naive)
-    # check_hooks(model_B_dense_init_naive)
-    # print(
-    #     "Sparsity of the init after transfer sparsity: ",
-    #     calculate_overall_sparsity_from_pth(model_B_dense_init_naive),
-    # )
+    transfer_sparsity_resnet(original_model_A_sparse, model_B_dense_init_naive)
+    check_hooks(model_B_dense_init_naive)
+    print(
+        "Sparsity of the init after transfer sparsity: ",
+        calculate_overall_sparsity_from_pth(model_B_dense_init_naive),
+    )
 
-    # trainer(
-    #     model_B_dense_init_naive,
-    #     config["optimizer"],
-    #     adjusted_sparse_epochs,
-    #     config["batch_size"],
-    #     config["device"],
-    #     "Model_B_Naive",
-    #     config,
-    #     sparse=True,
-    #     training_type="naive",
-    # )
+    trainer(
+        model_B_dense_init_naive,
+        config["optimizer"],
+        adjusted_sparse_epochs,
+        config["batch_size"],
+        config["device"],
+        "Model_B_Naive",
+        config,
+        sparse=True,
+        training_type="naive",
+    )
 
-    # results["B_naive"] = evaluate(model_B_dense_init_naive, test_dl, config["device"])
-    # print(f"B_naive: {results['B_naive'][0]:.2f}%, {results['B_naive'][1]:.4f}")
-    # ###############################################################################################################################################
+    results["B_naive"] = evaluate(model_B_dense_init_naive, test_dl, config["device"])
+    print(f"B_naive: {results['B_naive'][0]:.2f}%, {results['B_naive'][1]:.4f}")
+    ###############################################################################################################################################
 
     ################################################# Sparse training: Permuted solution = W_B^{t=k} ⊙ π(M_A) ####################################
     path_rewound_point_B_for_naive_and_permuted = f"{config['save_path']}Model_B_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
@@ -474,7 +476,7 @@ def train_naive_permuted(seed, k, config):
 
 
 def train_progressive(seed, config):
-    """Run progressive mask growth on a fresh Model B initialization."""
+    """Run progressive mask growth with a transferred or random initial mask."""
     progressive_config = config.get("progressive", {})
     targets = progressive_config.get("target_densities", [])
     if not targets:
@@ -495,16 +497,35 @@ def train_progressive(seed, config):
         + "_seed_"
         + str(seed)
     )
+    initial_mask = progressive_config.get("initial_mask", "model_a")
+    if initial_mask not in {"model_a", "random"}:
+        raise ValueError("progressive.initial_mask must be 'model_a' or 'random'")
+
     source_model = torch.load(source_path, map_location=config["device"])
     model_b = get_model(config)
-    transfer_mask(source_model, model_b, config["model_type"])
+    validate_mask_compatibility(source_model, model_b, config["model_type"])
+    source_active, _ = mask_statistics(source_model, config["model_type"])
+    initial_mask_generator = torch.Generator()
+    initial_mask_generator.manual_seed(
+        int(progressive_config.get("initial_mask_seed", seed))
+    )
+    if initial_mask == "model_a":
+        transfer_mask(source_model, model_b, config["model_type"])
+    else:
+        initialize_random_mask(
+            model_b,
+            config["model_type"],
+            source_active,
+            generator=initial_mask_generator,
+        )
     initial_masks = snapshot_masks(model_b, config["model_type"])
 
     start_run(
-        f"progressive_{config['model_type']}_seed_{seed}",
+        f"progressive_{initial_mask}_{config['model_type']}_seed_{seed}",
         {
             "project": f"{config['project']}_progressive",
             "method": "progressive",
+            "initial_mask": initial_mask,
             "target_densities": targets,
             "seed": seed,
         },
@@ -535,7 +556,7 @@ def train_progressive(seed, config):
         assert_density(model_b, config["model_type"], target_density)
         checkpoint = (
             f"{config['save_path']}progressive_stage_{stage}_density_"
-            f"{target_density}_seed_{seed}.pth"
+            f"{target_density}_{initial_mask}_seed_{seed}.pth"
         )
         torch.save(model_b.state_dict(), checkpoint)
         log_metrics(
@@ -611,7 +632,7 @@ def train_progressive(seed, config):
     result = evaluate(model_b, test_dl, config["device"])
     torch.save(
         model_b,
-        config["save_path"] + f"model_b_progressive_seed_{seed}.pth",
+        config["save_path"] + f"model_b_progressive_{initial_mask}_seed_{seed}.pth",
     )
     print(f"Progressive final accuracy: {result[0]:.2f}%")
     finish_run()

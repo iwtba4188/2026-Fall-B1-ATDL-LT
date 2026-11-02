@@ -4,6 +4,7 @@ import torch.nn.utils.prune as prune
 from progressive import (
     assert_density,
     grow_mask,
+    initialize_random_mask,
     mask_retention_statistics,
     mask_statistics,
     snapshot_masks,
@@ -35,6 +36,22 @@ def test_transfer_and_growth_are_monotonic():
     target_density = initial_density + 2 / total
     grow_mask(target, "LeNet", target_density)
     assert_density(target, "LeNet", target_density)
+
+
+def test_random_initial_mask_has_exact_requested_count_and_is_reproducible():
+    first = _masked_model()
+    second = _masked_model()
+    generator_first = torch.Generator().manual_seed(7)
+    generator_second = torch.Generator().manual_seed(7)
+
+    initialize_random_mask(first, "LeNet", 5, generator_first)
+    initialize_random_mask(second, "LeNet", 5, generator_second)
+
+    first_masks = snapshot_masks(first, "LeNet")
+    second_masks = snapshot_masks(second, "LeNet")
+    assert mask_statistics(first, "LeNet")[0] == 5
+    for name in first_masks:
+        assert torch.equal(first_masks[name], second_masks[name])
 
 
 def test_growth_rejects_decreasing_density():

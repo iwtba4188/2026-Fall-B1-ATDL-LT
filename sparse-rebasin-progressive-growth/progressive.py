@@ -146,6 +146,34 @@ def transfer_mask(
     return target_model
 
 
+def initialize_random_mask(
+    model: nn.Module,
+    model_type: str,
+    active_count: int,
+    generator: torch.Generator | None = None,
+) -> nn.Module:
+    """Install a globally random mask with an exact number of active weights."""
+    layers = eligible_modules(model, model_type)
+    total = sum(module.weight.numel() for _, module in layers)
+    if not 0 <= active_count <= total:
+        raise ValueError(
+            f"active_count must be between 0 and {total}, got {active_count}"
+        )
+
+    selected = torch.randperm(total, generator=generator)[:active_count]
+    masks: dict[str, torch.Tensor] = {}
+    offset = 0
+    for name, module in layers:
+        count = module.weight.numel()
+        mask = torch.zeros(count, dtype=torch.bool)
+        local = selected[(selected >= offset) & (selected < offset + count)] - offset
+        mask[local] = True
+        masks[name] = mask.reshape(module.weight.shape).to(module.weight.device)
+        offset += count
+    _install_masks(model, masks, model_type)
+    return model
+
+
 def grow_mask(
     model: nn.Module,
     model_type: str,

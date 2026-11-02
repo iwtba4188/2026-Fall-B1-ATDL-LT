@@ -98,6 +98,8 @@ progressive:
   epochs_per_stage: 5
   selection: magnitude  # magnitude, random, or gradient
   growth_seed: 0
+  initial_mask: model_a  # model_a or random
+  initial_mask_seed: 0
 ```
 
 After the dense/pruning phase has produced Model A's mask, run:
@@ -114,3 +116,8 @@ before each growth stage. Each stage writes a `progressive_stage_*` state-dict
 checkpoint and logs density and active-weight counts to W&B. The final pruning target remains
 `pruning.sparsity`, so a progressive run can be compared with the existing
 LTH, naive, permuted, and dense Model B controls at matched final sparsity.
+
+Set `initial_mask: random` to generate a random initial mask with exactly the
+same number of active weights as Model A's mask. `initial_mask_seed` controls
+that mask independently from `growth_seed`; the resulting run and checkpoints
+include the initial-mask mode in their names.
