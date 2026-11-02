@@ -1,8 +1,8 @@
 model_type: VGG11
-epochs: 20
+epochs: 40
 batch_size: 128
-model_b_epochs: 20
-sparse_epochs: 20
+model_b_epochs: 1
+sparse_epochs: 40
 num_workers: 8
 init_weights: true
 project: cifar10_vgg11_gradient
@@ -27,7 +27,7 @@ pruning:
   tolerance_resnet20: 0.005
 progressive:
   target_densities: [0.3, 0.4]
-  epochs_per_stage: 7
+  epochs_per_stage: 20
   selection: gradient
   growth_seed: 0
   initial_mask: model_a
