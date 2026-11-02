@@ -323,6 +323,8 @@ def train_naive_permuted(seed, k, config):
         f"Device {config['device']} not supported"
     )
     device = torch.device(config["device"] if torch.cuda.is_available() else "cpu")
+    baseline_config = config.get("baseline", {})
+    initial_mask_seed = int(baseline_config.get("initial_mask_seed", seed))
 
     start_run(
         f"rewind_{k}_{config['model_type']}_seed_{seed}",
@@ -339,15 +341,13 @@ def train_naive_permuted(seed, k, config):
 
     # decrease the sparse epochs based on rewind point
     adjusted_sparse_epochs = config["sparse_epochs"] - k
-    baseline_config = config.get("baseline", {})
-    initial_mask_seed = int(baseline_config.get("initial_mask_seed", seed))
     train_dl, test_dl = cifar_dataloader(config["batch_size"], config)
 
     ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
     model_A_dense_init_for_LTH = get_model(config)
     load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
     model_A_dense_init_for_LTH.load_state_dict(
-        torch.load(load_path_rewound_point_A_for_LTH)
+        torch.load(load_path_rewound_point_A_for_LTH), weights_only=False
     )
     results["model_A_LTH_rewound_point_eval"] = evaluate(
         model_A_dense_init_for_LTH, test_dl, config["device"]
@@ -361,7 +361,8 @@ def train_naive_permuted(seed, k, config):
         + "model_a_sparse_sparsity_"
         + str(config["pruning"]["sparsity"])
         + "_seed_"
-        + str(config["seed"])
+        + str(config["seed"]),
+        weights_only=False,
     )
 
     transfer_sparsity_resnet(original_model_A_sparse, model_A_dense_init_for_LTH)
@@ -390,7 +391,7 @@ def train_naive_permuted(seed, k, config):
     model_B_dense_init_naive = get_model(config)
     path_rewound_point_B_for_naive_and_permuted = f"{config['save_path']}Model_B_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
     model_B_dense_init_naive.load_state_dict(
-        torch.load(path_rewound_point_B_for_naive_and_permuted)
+        torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
     )
 
     results["model_B_naive_rewound_point_eval"] = evaluate(
@@ -426,7 +427,7 @@ def train_naive_permuted(seed, k, config):
     ################################################## Sparse training: Random solution = W_B^{t=k} ⊙ M_random ###############################
     model_B_dense_init_random = get_model(config)
     model_B_dense_init_random.load_state_dict(
-        torch.load(path_rewound_point_B_for_naive_and_permuted)
+        torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
     )
     source_active, _ = mask_statistics(original_model_A_sparse, config["model_type"])
     random_mask_generator = torch.Generator()
@@ -455,13 +456,8 @@ def train_naive_permuted(seed, k, config):
         training_type="random",
     )
 
-    results["B_random"] = evaluate(
-        model_B_dense_init_random, test_dl, config["device"]
-    )
-    print(
-        f"B_random: {results['B_random'][0]:.2f}%, "
-        f"{results['B_random'][1]:.4f}"
-    )
+    results["B_random"] = evaluate(model_B_dense_init_random, test_dl, config["device"])
+    print(f"B_random: {results['B_random'][0]:.2f}%, {results['B_random'][1]:.4f}")
     torch.save(
         model_B_dense_init_random,
         config["save_path"]
@@ -475,7 +471,7 @@ def train_naive_permuted(seed, k, config):
     with FlopCounterMode(display=False) as mode:
         model_B_dense_init_perm = get_model(config)
         model_B_dense_init_perm.load_state_dict(
-            torch.load(path_rewound_point_B_for_naive_and_permuted)
+            torch.load(path_rewound_point_B_for_naive_and_permuted), weights_only=False
         )
         ## Ensure this gives the same evaluation as the rewound point from above. ###
         results["model_B_perm_rewound_point_eval"] = evaluate(
@@ -490,7 +486,8 @@ def train_naive_permuted(seed, k, config):
             + "permuted_model_a_sparse_sparsity_"
             + str(config["pruning"]["sparsity"])
             + "_seed_"
-            + str(config["seed"])
+            + str(config["seed"]),
+            weights_only=False,
         )
         transfer_sparsity_resnet(permuted_model_A_sparse, model_B_dense_init_perm)
         check_hooks(model_B_dense_init_perm)
@@ -551,7 +548,9 @@ def train_progressive(seed, config):
     if initial_mask not in {"model_a", "random"}:
         raise ValueError("progressive.initial_mask must be 'model_a' or 'random'")
 
-    source_model = torch.load(source_path, map_location=config["device"])
+    source_model = torch.load(
+        source_path, map_location=config["device"], weights_only=False
+    )
     model_b = get_model(config)
     validate_mask_compatibility(source_model, model_b, config["model_type"])
     source_active, _ = mask_statistics(source_model, config["model_type"])
