@@ -45,10 +45,11 @@ def trainer(model, optimizer_config, epochs, batch_size, device, model_name, con
     lrs = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, epochs, eta_min=0.0)
     train_dl, test_dl = cifar_dataloader(batch_size, config)
 
+    torch.save(model.state_dict(), config['save_path'] + model_name + '_sparsity_' + str(config['pruning']['sparsity'])+ '_seed_' + str(config['seed']) + '_epoch_0')
     for epoch in range(epochs):
         train_loss_est = train_epoch(model, train_dl, optimizer, device, sparse=sparse)
         if epoch%5==0 and 'Permuted' not in model_name and 'Naive' not in model_name and 'LTH' not in model_name: 
-            torch.save(model.state_dict(), config['save_path'] + model_name + '_sparsity_' + str(config['pruning']['sparsity'])+ '_seed_' + str(config['seed']) + '_epoch_' + str(epoch))
+            torch.save(model.state_dict(), config['save_path'] + model_name + '_sparsity_' + str(config['pruning']['sparsity'])+ '_seed_' + str(config['seed']) + '_epoch_' + str(epoch+1))
         test_accu, test_loss = evaluate(model, test_dl, device)
         print(
             f"Epoch: {epoch+1:2d} - Test accuracy: {test_accu:.2f} - Test loss: {test_loss:.4f} - ",
