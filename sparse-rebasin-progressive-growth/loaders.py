@@ -1,12 +1,19 @@
-import torch
-from torchvision import datasets, transforms
 import os
+
+import torch
 import yaml
+from torchvision import datasets, transforms
+
 
 def cifar_dataloader(batch_size, config, slurm_tmpdir = None):
 
     dataset = config["dataset"]
     dataset_root = config["dataset_root"][dataset]
+
+    datasets.CIFAR10.url = (
+        "https://huggingface.co/datasets/MIT-OL-AI-D/cifar-10-python/"
+        "resolve/a48007227f9e2cd0af96175f4afb5ac4965e261b/cifar-10-python.tar.gz"
+    )
 
     if dataset == "cifar10":
         print("Load CIFAR10 dataset")
