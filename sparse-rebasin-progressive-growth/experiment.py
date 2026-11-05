@@ -343,61 +343,61 @@ def train_naive_permuted(seed, k, config):
     adjusted_sparse_epochs = config["sparse_epochs"] - k
     train_dl, test_dl = cifar_dataloader(config["batch_size"], config)
 
-    ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
-    with FlopCounterMode(display=False) as modeLTH:
-        model_A_dense_init_for_LTH = get_model(config)
-        load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
-        model_A_dense_init_for_LTH.load_state_dict(
-            torch.load(load_path_rewound_point_A_for_LTH, weights_only=False)
-        )
-        results["model_A_LTH_rewound_point_eval"] = evaluate(
-            model_A_dense_init_for_LTH, test_dl, config["device"]
-        )
-        print(
-            f"model_A_LTH_rewound_point_eval: {results['model_A_LTH_rewound_point_eval'][0]:.2f}%, {results['model_A_LTH_rewound_point_eval'][1]:.4f}"
-        )
+    # ################################################### Sparse training: LTH solution = W_A^{t=k} ⊙ M_A #############################################
+    # with FlopCounterMode(display=False) as modeLTH:
+    #     model_A_dense_init_for_LTH = get_model(config)
+    #     load_path_rewound_point_A_for_LTH = f"{config['save_path']}Model_A_Dense_sparsity_{config['pruning']['sparsity']}_seed_{config['seed']}_epoch_{k}"
+    #     model_A_dense_init_for_LTH.load_state_dict(
+    #         torch.load(load_path_rewound_point_A_for_LTH, weights_only=False)
+    #     )
+    #     results["model_A_LTH_rewound_point_eval"] = evaluate(
+    #         model_A_dense_init_for_LTH, test_dl, config["device"]
+    #     )
+    #     print(
+    #         f"model_A_LTH_rewound_point_eval: {results['model_A_LTH_rewound_point_eval'][0]:.2f}%, {results['model_A_LTH_rewound_point_eval'][1]:.4f}"
+    #     )
 
-        original_model_A_sparse = torch.load(
-            config["save_path"]
-            + "model_a_sparse_sparsity_"
-            + str(config["pruning"]["sparsity"])
-            + "_seed_"
-            + str(config["seed"]),
-            weights_only=False,
-        )
-
-        transfer_sparsity_resnet(original_model_A_sparse, model_A_dense_init_for_LTH)
-        check_hooks(model_A_dense_init_for_LTH)
-        print(
-            "Sparsity of the init after transfer sparsity: ",
-            calculate_overall_sparsity_from_pth(model_A_dense_init_for_LTH),
-        )
-
-        trainer(
-            model_A_dense_init_for_LTH,
-            config["optimizer"],
-            adjusted_sparse_epochs,
-            config["batch_size"],
-            config["device"],
-            "LTH",
-            config,
-            sparse=True,
-            training_type="LTH",
-        )
-        results["LTH"] = evaluate(model_A_dense_init_for_LTH, test_dl, config["device"])
-        print(f"LTH: {results['LTH'][0]:.2f}%, {results['LTH'][1]:.4f}")
-
-    print("=" * 50)
-    print(f"Total FLOPs: {modeLTH.get_total_flops()}")
-    print(f"Global FLOPs: {modeLTH.get_flop_counts()['Global']}")
-
-    log_metrics(
-        {
-            "Total FLOPs": modeLTH.get_total_flops(),
-            "Global FLOPs": modeLTH.get_flop_counts()["Global"],
-        }
+    original_model_A_sparse = torch.load(
+        config["save_path"]
+        + "model_a_sparse_sparsity_"
+        + str(config["pruning"]["sparsity"])
+        + "_seed_"
+        + str(config["seed"]),
+        weights_only=False,
     )
-    #################################################################################################################################################
+
+    #     transfer_sparsity_resnet(original_model_A_sparse, model_A_dense_init_for_LTH)
+    #     check_hooks(model_A_dense_init_for_LTH)
+    #     print(
+    #         "Sparsity of the init after transfer sparsity: ",
+    #         calculate_overall_sparsity_from_pth(model_A_dense_init_for_LTH),
+    #     )
+
+    #     trainer(
+    #         model_A_dense_init_for_LTH,
+    #         config["optimizer"],
+    #         adjusted_sparse_epochs,
+    #         config["batch_size"],
+    #         config["device"],
+    #         "LTH",
+    #         config,
+    #         sparse=True,
+    #         training_type="LTH",
+    #     )
+    #     results["LTH"] = evaluate(model_A_dense_init_for_LTH, test_dl, config["device"])
+    #     print(f"LTH: {results['LTH'][0]:.2f}%, {results['LTH'][1]:.4f}")
+
+    # print("=" * 50)
+    # print(f"Total FLOPs: {modeLTH.get_total_flops()}")
+    # print(f"Global FLOPs: {modeLTH.get_flop_counts()['Global']}")
+
+    # log_metrics(
+    #     {
+    #         "Total FLOPs": modeLTH.get_total_flops(),
+    #         "Global FLOPs": modeLTH.get_flop_counts()["Global"],
+    #     }
+    # )
+    # #################################################################################################################################################
 
     ################################################## Sparse training: Naive solution = W_B^{t=k} ⊙ M_A ############################################
     with FlopCounterMode(display=False) as modeNaive:
