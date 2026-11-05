@@ -1,7 +1,7 @@
 model_type: VGG11
 epochs: 50
 batch_size: 128
-model_b_epochs: 1
+model_b_epochs: 0
 sparse_epochs: 50
 num_workers: 8
 init_weights: true
