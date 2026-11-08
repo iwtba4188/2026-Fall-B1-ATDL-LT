@@ -1,6 +1,6 @@
 # Progressive LT Mask Transfer
 
-This is the code repository is based on the code repository of paper "Sparse Training from Random Initialization: Aligning Lottery Ticket Masks using Weight Symmetry", [accepted at ICML 2025](https://openreview.net/forum?id=BnfJSwtHLu), and available on arXiv at http://arxiv.org/abs/2505.05143.
+This is the code repository is based on the [calgaryml/sparse-rebasin](https://github.com/calgaryml/sparse-rebasin) for the paper "Sparse Training from Random Initialization: Aligning Lottery Ticket Masks using Weight Symmetry", [accepted at ICML 2025](https://openreview.net/forum?id=BnfJSwtHLu), and available on arXiv at http://arxiv.org/abs/2505.05143.
 
 The BibTex citation of the original work:
 

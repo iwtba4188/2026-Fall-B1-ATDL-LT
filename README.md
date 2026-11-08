@@ -1,4 +1,5 @@
 # 2026-Fall-B1-ATDL-LT
+
 Assignment 3 - Lottery Ticket
 
 ## Env Setup
@@ -16,10 +17,9 @@ Assignment 3 - Lottery Ticket
     uv sync
     ```
 
-## Run tests
+## Repo Structure
 
-1. Run
-
-    ```powershell
-    uv run pytest
-    ```
+- The original repo [calgaryml/sparse-rebasin](https://github.com/calgaryml/sparse-rebasin) is in `sparse-rebasin/`.
+- Our main experiments on the progressive method are in `sparse-rebasin-progressive-growth/`.
+- Data transfer experiments are in `data_transfer_learning/`.
+- The phase-matched ablation is in `Ablation_til_github/`.
